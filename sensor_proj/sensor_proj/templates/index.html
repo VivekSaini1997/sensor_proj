@@ -1,0 +1,107 @@
+ <!DOCTYPE html>
+  <html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script
+      src="http://code.jquery.com/jquery-3.2.1.js"
+        integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="
+          crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(dataLoad);
+
+      var data, data2, chart, chart2;
+
+      function dataLoad(){
+        data = new google.visualization.DataTable();
+        data.addColumn('string', 'Temps');
+        data.addColumn('number', 'System');
+        data.addColumn('number', 'Peripheral');
+        data.addColumn('number', 'PCH');
+
+        data2 = new google.visualization.DataTable();
+        data2.addColumn('string', 'RPMs');
+        data2.addColumn('number', 'Fan 1');
+        data2.addColumn('number', 'Fan 2');
+        data2.addColumn('number', 'Fan 3');
+        data2.addColumn('number', 'Fan 4');
+        data2.addColumn('number', 'Fan A');
+        data2.addColumn('number', 'Fan B');
+        chart = new google.visualization.LineChart(document.getElementById('temp_chart'));
+        chart2 = new google.visualization.LineChart(document.getElementById('fan_chart'));
+      }
+
+      function drawTempChart() {
+        var options = {
+           title: 'Temperature Sensors',
+           curveType: 'function',
+           legend: { position: 'bottom' },
+           vAxis: { title: 'degrees C' }
+        };
+
+        var options2 = {
+         title: 'Fan Sensors',
+         curveType: 'function',
+         legend: { position: 'bottom' },
+         vAxis: { title: 'RPM' }
+        };
+
+		var jsonData = $.ajax({
+		    type: 'GET',
+		    url: (data.getNumberOfRows() == 0 || data2.getNumberOfRows == 0) ? '/graph/bptt/': '/graph/latest/',
+    		dataType: 'json',
+		}).done(function(json){
+          tempsArr = jsonData.responseJSON.temps;
+          if (data.getNumberOfRows() == 0){
+            for (j = 0; j < 60; j++){
+              var z = tempsArr[j]
+              z = z.split(',')
+              for (i = 1; i < 4; i++){
+                z[i] = parseFloat(z[i]);
+              }
+              data.addRow(z);
+            }
+          } else {
+            var z = tempsArr[0]
+            z = z.split(',')
+            for (i = 1; i < 4; i++){
+              z[i] = parseFloat(z[i]);
+            }
+            data.addRow(z);
+            data.removeRow(0);
+          }
+
+          chart.draw(data, options);
+
+          var fansArr = jsonData.responseJSON.fans;
+          if (data2.getNumberOfRows() == 0){
+            for (j = 0; j < 60; j++){
+              var z = fansArr[j]
+              z = z.split(',')
+              for (i = 1; i < 7; i++){
+                z[i] = parseFloat(z[i]);
+              }
+              data2.addRow(z);
+            }
+          } else {
+            var z = fansArr[0]
+            z = z.split(',')
+            for (i = 1; i < 7; i++){
+              z[i] = parseFloat(z[i]);
+            }
+            data2.addRow(z);
+            data2.removeRow(0);
+          }
+
+          chart2.draw(data2, options2);
+        });
+      }
+    setInterval(drawTempChart, 1000);
+    </script>
+  </head>
+  <body>
+    <div id="temp_chart" style="width: 900px; height: 500px"></div>
+    <div id="fan_chart" style="width: 900px; height: 500px"></div>
+  </body>
+</html>
+

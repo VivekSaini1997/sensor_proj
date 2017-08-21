@@ -1,0 +1,146 @@
+
+ <!DOCTYPE html>
+  <html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script
+      src="http://code.jquery.com/jquery-3.2.1.js"
+        integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="
+          crossorigin="anonymous"></script>
+    <script type="text/javascript">
+    //This script gets the 
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(dataLoad);
+
+      var data, data2, chart, chart2, timezoneOffset, options, options2;
+
+      function dataLoad(){
+        data = new google.visualization.DataTable();
+        data.addColumn('timeofday', 'Temps');
+        {% for temp_label in temp_labels %}
+        data.addColumn('number', '{{ temp_label }}')
+        {% endfor %}
+
+        data2 = new google.visualization.DataTable();
+        data2.addColumn('timeofday', 'RPMs');
+        {% for fan_label in fan_labels %}
+        data2.addColumn('number', '{{ fan_label }}')
+        {% endfor %}
+
+        chart = new google.visualization.LineChart(document.getElementById('temp_chart'));
+        chart2 = new google.visualization.LineChart(document.getElementById('fan_chart'));
+        var localTime = new Date()
+        timezoneOffset = localTime.getTimezoneOffset() / 60 - 4
+
+        options = {
+           title: 'Temperature Sensors',
+           curveType: 'function',
+           legend: { position: 'right' },
+           vAxis: { title: 'degrees C' }
+        };
+
+        options2 = {
+           title: 'Fan Sensors',
+           curveType: 'function',
+           legend: { position: 'right' },
+           vAxis: { title: 'RPM' }
+        };
+
+      }
+
+      function drawTempChart() {
+        var localTime2 = new Date()
+        if (data.getNumberOfRows() != 0){
+        //last entry time in data
+          var fetch = (localTime2.getMinutes() - data.getValue(data.getNumberOfRows()-1, 0)[1])*60 + localTime2.getSeconds() - data.getValue(data.getNumberOfRows()-1, 0)[2]
+          console.log(data.getValue(data.getNumberOfRows()-1, 0)[2])
+          console.log(fetch)
+          if (fetch < 0) { fetch = 0; }
+        }
+		var jsonData = $.ajax({
+		    type: 'GET',
+		    url: (data.getNumberOfRows() == 0 || data2.getNumberOfRows == 0) ? '/graph/tq/?ip={{ ip }}': '/graph/bptt/' + fetch + '?ip={{ ip }}',
+    		dataType: 'json',
+		}).done(function(json){
+          tempsArr = jsonData.responseJSON.temps;
+          if (data.getNumberOfRows() == 0){
+            for (j = 0; j < 60; j++){
+              var z = tempsArr[j]
+              z = z.split(',')
+              db = z[0].split(':')
+              for (i = 0; i < 3; i++){
+                db[i] = parseInt(db[i])
+              }
+              db[0] = db[0] + timezoneOffset
+              z[0] = db
+              for (i = 1; i < data.getNumberOfColumns(); i++){
+                z[i] = parseFloat(z[i]);
+              }
+              data.addRow(z);
+            }
+          } else {
+            for (j = 0; j < fetch; j++){
+              var z = tempsArr[j]
+              z = z.split(',')
+              db = z[0].split(':')
+              for (i = 0; i < 3; i++){
+                db[i] = parseInt(db[i])
+              }
+              db[0] = db[0] + timezoneOffset
+              z[0] = db
+              for (i = 1; i < data.getNumberOfColumns(); i++){
+                z[i] = parseFloat(z[i]);
+              }
+              data.addRow(z);
+              data.removeRow(0);
+            }
+          }
+
+          chart.draw(data, options);
+
+          var fansArr = jsonData.responseJSON.fans;
+          if (data2.getNumberOfRows() == 0){
+            for (j = 0; j < 60; j++){
+              var z = fansArr[j]
+              z = z.split(',')
+              db = z[0].split(':')
+              for (i = 0; i < 3; i++){
+                db[i] = parseInt(db[i])
+              }
+              db[0] = db[0] + timezoneOffset
+              z[0] = db
+              for (i = 1; i < data2.getNumberOfColumns(); i++){
+                z[i] = parseFloat(z[i]);
+              }
+              data2.addRow(z);
+            }
+          } else {
+            for (j = 0; j < fetch; j++){
+              var z = fansArr[j]
+              z = z.split(',')
+              db = z[0].split(':')
+              for (i = 0; i < 3; i++){
+                db[i] = parseInt(db[i])
+              }
+              db[0] = db[0] + timezoneOffset
+              z[0] = db
+              for (i = 1; i < data2.getNumberOfColumns(); i++){
+                z[i] = parseFloat(z[i]);
+              }
+              data2.addRow(z);
+              data2.removeRow(0);
+            }
+          }
+
+          chart2.draw(data2, options2);
+        });
+      }
+    setInterval(drawTempChart, 1000);
+    </script>
+  </head>
+  <body>
+    <div id="temp_chart" style="width: 900px; height: 500px"></div>
+    <div id="fan_chart" style="width: 900px; height: 500px"></div>
+  </body>
+</html>
+

@@ -1,0 +1,19 @@
+ <!DOCTYPE html>
+  <html>
+  <head>
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    <form action="/graph/test/" method="get">
+      Enter IP to go to:<br>
+      <input type="text" name="ip">
+    </form>
+  </head>
+  <body>
+  </body>
+</html>
+
